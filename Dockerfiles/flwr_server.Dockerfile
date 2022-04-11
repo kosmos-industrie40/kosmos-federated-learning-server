@@ -3,11 +3,6 @@
 # * Install gcc libpython3-dev to compile C Python modules
 # * Update pip to support bdist_wheel
 FROM python:3.8.0 AS build-venv
-<<<<<<< HEAD
-=======
-ARG GIT_USER
-ARG GIT_TOKEN
->>>>>>> master
 COPY requirements.txt /app/requirements.txt
 WORKDIR /app
 RUN apt-get update
