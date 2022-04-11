@@ -1,0 +1,15 @@
+
+flwr_server_address: "[::1]:50052"
+socketio_address: "0.0.0.0:6000"
+mlflow_server_address: "http://localhost:5000" #This can either be a local directory or a remote mlflow-server address
+mlflow_experiment_name: "default_config"
+num_clients: 1
+tags:
+  experiment_name: "default_config"
+
+n_federated_train_epoch: 10
+test_bearing: [
+  "Bearing1_3",
+  "Bearing1_4",
+]
+DEBUG: False

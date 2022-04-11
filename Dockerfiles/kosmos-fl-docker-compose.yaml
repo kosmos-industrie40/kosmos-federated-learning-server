@@ -1,0 +1,40 @@
+version: '3.2'
+
+services:
+
+  mlflow:
+    container_name: mlflow
+    image: mlflow:latest
+    networks:
+      - fl_network
+    ports:
+      - "5000"
+
+
+  kosmos_fl_server:
+    container_name: kosmos_fl_server
+    image: kosmos_fl_server:latest
+    entrypoint: ["/app/venv/bin/python", "kosmos_fl_server.py"]
+    networks:
+
+      - fl_network
+    environment:
+      - DYNACONF_mlflow_server_address=http://mlflow:5000
+      - DYNACONF_flwr_server_address=0.0.0.0:50052
+      - DYNACONF_socketio_address=0.0.0.0:6000
+      - DYNACONF_num_clients=1
+
+  kosmos_fl_client_0:
+    container_name: kosmos_fl_client_0
+    image: kosmos_fl_client:latest
+    entrypoint: ["/app/venv/bin/python", "kosmos_fl_client.py"]
+    networks:
+      - fl_network
+    environment:
+      - DYNACONF_flwr_server_address=kosmos_fl_server:50052
+      - DYNACONF_socketio_address=http://kosmos_fl_server:6000
+
+networks:
+  fl_network:
+    name: fl_network
+    driver: bridge
