@@ -66,13 +66,13 @@ developed using python version 3.8. The behavior with other versions is undefine
 
     pip install -r requirements.txt
 
-1. Install the server
+2. Install the server
 
 .. code-block::
 
     python setup.py install
 
-1. Furthermore, to access the logged training process visit the MLFlow UI server `http://localhost:5000 <http://localhost:5000>`_. MLFlow must be up and running:
+3. Furthermore, to access the logged training process visit the MLFlow UI server `http://localhost:5000 <http://localhost:5000>`_. MLFlow must be up and running:
 
 .. code-block::
 
