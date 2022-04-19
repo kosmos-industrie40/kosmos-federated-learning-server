@@ -39,7 +39,7 @@ To start the KOSMoS Federated Learning Server for a federated learning session d
 
 .. code-block::
 
-    docker build --rm -t kosmos_fl_server:latest -f Dockerfiles/kosmos_fl_server.Dockerfile --build-arg GIT_USER=<gitlab username> --build-arg GIT_TOKEN=<gitlab token> .
+    docker build --rm -t kosmos_fl_server:latest -f Dockerfiles/kosmos_fl_server.Dockerfile .
 
     docker build --rm -t mlflow:latest -f Dockerfiles/mlflow.Dockerfile - < Dockerfiles/mlflow.Dockerfile #- < Dockerfiles/mlflow.Dockerfile avoid that context is copied to container
 
