@@ -11,6 +11,7 @@ before_script:
   - git config --global user.name "Tester"
   - git config --global url."https://$GIT_USER:$GIT_TOKEN@gitlab.inovex.de".insteadOf https://gitlab.inovex.de
   - pip install -r requirements.txt
+  - python ./setup.py install
 
 pylint_code:
   stage: Static Analysis
@@ -18,7 +19,7 @@ pylint_code:
     - shared
   script:
     - pip install pylint
-    - pylint src/*
+    - pylint src/fl_server/*
 
 pylint_test:
   stage: Static Analysis

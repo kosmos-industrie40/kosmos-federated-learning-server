@@ -8,8 +8,20 @@ tags:
   experiment_name: "default_config"
 
 n_federated_train_epoch: 10
-test_bearing: [
-  "Bearing1_3",
-  "Bearing1_4",
-]
+usecase:
+  name: "BearingUseCase"
+  params:
+    test_bearings: ["Bearing1_3", "Bearing1_4"]
+  broadcast:
+    test: "Test"
+
+# usecase:
+#   name: "TurbofanUseCase"
+#   params:
+#     file_path: "../test.csv"  # TODO has to be adapted
+#   broadcast:
+#     sequence_length: 100
+#     loss: "RootMeanSquaredError"
+#     remaining_sensors: ['setting_1', 'setting_2', 'sensor_02', 'sensor_03', 'sensor_04', 'sensor_07', 'sensor_08', 'sensor_09', 'sensor_11', 'sensor_12', 'sensor_13', 'sensor_14', 'sensor_15', 'sensor_17','sensor_20', 'sensor_21']
+#     min_max_norm_columns: ['sensor_17', 'setting_2']
 DEBUG: False

@@ -94,6 +94,7 @@ Troubleshooting:
 ****************
 
 - Training not starting: Make sure that the number of clients of connecting to the server matches ``num_clients`` in :code:`config.yaml`.
+- Training not starting after message *"Enough clients available start training now"*: Make sure mlflow is running
 - No Progress bar is shown when loading the bearing data: Add :code:`-tty` argument to :code:`docker run`
 
 
@@ -146,6 +147,13 @@ The upbringing of a federated learning server with flower is based on the :code:
 Note that the bearings available for training and testing are chosen distinctively from the list of all available bearings.
 Because of the nature of federated learning, a bearing should be used exclusively as test or as
 client training data.
+
+
+Developer Guide
+===============
+
+A guide on how to create new use cases and add new models can be found `here <https://github.com/kosmos-industrie40/kosmos-federated-learning-resources/blob/release/HOWTO.rst>`_.
+
 
 .. _pyscaffold-notes:
 

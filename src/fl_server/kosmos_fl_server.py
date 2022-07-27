@@ -1,10 +1,11 @@
 """
-This script is the implementation for the federated bearing wrapper. It's the manager instance
-which connects to the kosmos-edge devices and triggers the federated training if the
-participants hold a sufficient number of training data.
+This script starts a server that implements the usecase configured in config.yaml. The server
+triggers the federated training if enough clients participate.
 """
+import os
 from multiprocessing import Process
 from threading import Lock
+from warnings import warn
 
 import eventlet
 import mlflow
@@ -16,7 +17,9 @@ from fl_server.flwr_server import start_server
 # from eventlet.green import threading
 # eventlet.monkey_patch()
 
-CONFIG = Dynaconf(settings_files=["./config.yaml"])
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.yaml")
+CONFIG = Dynaconf(settings_files=[CONFIG_FILE])
+
 client_list = []
 client_list_lock = Lock()
 TRAIN_CLIENT_LIST = []
@@ -42,7 +45,7 @@ def connect(sid, data):
 def message(sid, data):
     """
     This is the default message handler if no handler has been specified for a event.
-    It won't be used in the production code but is useful for debugging.
+    It should not be used in the production code but is useful for debugging.
     :param data:
     """
     print(f"message from {sid} with data {data}")
@@ -52,7 +55,7 @@ def message(sid, data):
 def client_criteria(sid, data):
     """
     Client response to it's criteria check. If it's successful the client can be added to the
-    client training pool. As soon as a specified number of suitable client are in the pool
+    client training pool. As soon as a specified number of suitable clients are in the pool
     the federated training will be started.
     :param sid: client session id
     :param data: result of client data criteria check
@@ -60,10 +63,16 @@ def client_criteria(sid, data):
     # pylint: disable= global-statement
     global TRAIN_CLIENT_LIST
     # check if criteria has been met
-    criteria_is_met = data.get("criteria_is_met")
+    criteria_are_met = data.get("criteria_are_met")
 
-    if criteria_is_met is False:
+    if criteria_are_met is None:
+        # mising information from client
+        warn("Missing key 'criteria_are_met' in transmitted data. Ignoring client.")
         return
+
+    if criteria_are_met is False:
+        return
+
     with train_clients_list_lock:
         TRAIN_CLIENT_LIST.append(sid)
         if len(TRAIN_CLIENT_LIST) == CONFIG.get("num_clients"):
@@ -76,18 +85,28 @@ def client_criteria(sid, data):
 def disconnect(sid):
     """
     The default event handler called if the connection is closed.
-    NOTE: It won't be called if the connection is interrupted unintended
+    NOTE: It won't be called if the connection is interrupted unintendedly
     """
     print(f"Client {sid} disconnected from server")
 
 
-def train_on_all_clients(flwr_config):
+def train_on_all_clients(flwr_config: Dynaconf):
     """
     This function triggers the training event on all clients. Therefore it sends the
     central model further to be trained on the private data of the clients.
-    """
 
-    mlflow.set_tracking_uri(flwr_config["mlflow_server_address"])
+    :param flwr_config: Loaded configuration. Has the following mandatory keys:
+        * mlflow_server_address
+        * mlflow_experiment_name
+        * num_clients
+        * n_federated_train_epoch
+        * flwr_server_address
+        * usecase
+            * name
+            * params
+    """
+    server_address = flwr_config["mlflow_server_address"]
+    mlflow.set_tracking_uri(server_address)
 
     mlflow.end_run()
 
@@ -97,21 +116,27 @@ def train_on_all_clients(flwr_config):
     mlflow.start_run()
     mlflow_run_id = mlflow.active_run().info.run_id
     if flwr_config.get("tags") is not None:
-        print(flwr_config.get("tags"))
-        for key, value in flwr_config.get("tags").items():
+        print(flwr_config["tags"])
+        for key, value in flwr_config["tags"].items():
             mlflow.set_tag(key, value)
 
+    broadcast_config = flwr_config.as_dict()["USECASE"].get("broadcast", {})
+
+    joined_config = {**flwr_config.as_dict()["USECASE"]["params"], **broadcast_config}
+
     # print("============= Starting federated learning server =============")
+
     flower_server_process = Process(
         target=start_server,
         args=(
-            flwr_config.get("num_clients"),
-            flwr_config.get("test_bearing"),
-            flwr_config.get("n_federated_train_epoch"),
-            flwr_config.get("flwr_server_address"),
-            flwr_config.get("mlflow_server_address"),
+            flwr_config["num_clients"],
+            flwr_config["usecase"]["name"],
+            flwr_config["n_federated_train_epoch"],
+            flwr_config["flwr_server_address"],
+            server_address,
             mlflow_run_id,
         ),
+        kwargs=joined_config,
     )
 
     flower_server_process.start()
@@ -122,8 +147,11 @@ def train_on_all_clients(flwr_config):
             {
                 "client_id": idx,
                 "mlflow_experiment_name": flwr_config["mlflow_experiment_name"],
-                "mlflow_server_address": flwr_config.get("mlflow_server_address"),
+                "mlflow_server_address": server_address,
                 "mlflow_run_id": mlflow_run_id,
+                "flwr_server_address": flwr_config["flwr_server_address"],
+                "usecase_name": flwr_config["usecase"]["name"],
+                "usecase_params": broadcast_config,
             },
             room=sid,
         )
@@ -134,7 +162,7 @@ def train_on_all_clients(flwr_config):
 
 
 if __name__ == "__main__":
-    # Starts the bearing use case server which waits for a specified number of participating clients
+    # Starts the usecase server which waits for a specified number of participating clients
     # and then runs the federated learning process using flower. The clients can be forced to check
     # their data for certain conditions further to attend in the training process (number of
     # training data, length of sequences, ...).
